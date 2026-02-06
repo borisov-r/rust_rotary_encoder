@@ -57,6 +57,8 @@ cargo install espflash
 
 ## Building and Flashing
 
+### For ESP32 Hardware
+
 ```bash
 # Build the project
 cargo build --release
@@ -70,6 +72,23 @@ Or use espflash directly:
 ```bash
 espflash flash target/xtensa-esp32-espidf/release/rotary_encoder_example --monitor
 ```
+
+### For Simulation (No Hardware Required)
+
+You can test the rotary encoder logic without ESP32 hardware:
+
+```bash
+# Build and run simulation example
+cargo run --example simulate --target x86_64-unknown-linux-gnu
+
+# On macOS, use:
+cargo run --example simulate --target aarch64-apple-darwin
+
+# On Windows, use:
+cargo run --example simulate --target x86_64-pc-windows-msvc
+```
+
+The simulation demonstrates clockwise/counter-clockwise rotation and tests different range modes.
 
 ## Usage
 
