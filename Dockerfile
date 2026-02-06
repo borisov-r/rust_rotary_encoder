@@ -8,7 +8,6 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Accept optional GitHub token to avoid API rate limits during espup install
 # Note: This token is only used during build and is NOT persisted in the final image
 ARG GITHUB_TOKEN
-ENV GITHUB_TOKEN=${GITHUB_TOKEN}
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -32,7 +31,12 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Install espup and setup ESP32 toolchain
 RUN cargo install espup espflash ldproxy
-RUN espup install
+# Use GITHUB_TOKEN directly in RUN command without persisting in ENV
+RUN if [ -n "${GITHUB_TOKEN}" ]; then \
+        GITHUB_TOKEN=${GITHUB_TOKEN} espup install; \
+    else \
+        espup install; \
+    fi
 
 # Add ESP environment to bashrc for automatic sourcing
 RUN echo '. $HOME/export-esp.sh' >> /root/.bashrc

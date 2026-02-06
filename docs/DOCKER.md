@@ -198,14 +198,18 @@ If the Docker build fails:
    docker build -t rust-rotary-encoder:builder --target builder . --no-cache
    ```
 
-### GitHub API Rate Limit Error
+### GitHub API Rate Limit or Authentication Error
 
 If you see an error like:
 ```
 [warn]: Failed to get latest Xtensa Rust version: HTTP GET Error: GitHub API returned status code: 403 Forbidden
 ```
+or:
+```
+[warn]: Failed to get latest Xtensa Rust version: HTTP GET Error: GitHub API returned status code: 401 Unauthorized
+```
 
-This happens when the Docker build hits GitHub's API rate limit during the `espup install` step. Without authentication, GitHub only allows 60 API requests per hour per IP address.
+This happens when the Docker build hits GitHub's API rate limit during the `espup install` step or when GitHub requires authentication. Without authentication, GitHub only allows 60 API requests per hour per IP address.
 
 **Solution: Use a GitHub Personal Access Token**
 
