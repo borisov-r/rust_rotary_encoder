@@ -29,10 +29,10 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 RUN cargo install espup espflash ldproxy
 RUN espup install
 
-# Source ESP environment variables for build
-ENV LIBCLANG_PATH="/root/.rustup/toolchains/esp/xtensa-esp-elf-clang/esp-16.0.0-20230516/esp-clang/lib"
-ENV PATH="/root/.rustup/toolchains/esp/xtensa-esp32-elf/esp-13.2.0_20230928/xtensa-esp32-elf/bin:${PATH}"
-ENV IDF_PATH="/root/.espressif/esp-idf/v5.1"
+# Create a script to dynamically set ESP environment paths
+RUN echo '#!/bin/bash' > /root/setup-esp-env.sh && \
+    echo 'source /root/export-esp.sh' >> /root/setup-esp-env.sh && \
+    chmod +x /root/setup-esp-env.sh
 
 # Set working directory
 WORKDIR /project
@@ -44,8 +44,8 @@ COPY src src
 COPY build.rs .
 COPY sdkconfig.defaults .
 
-# Build the project in release mode
-RUN . /root/export-esp.sh && cargo build --release
+# Build the project in release mode with ESP environment
+RUN bash -c "source /root/export-esp.sh && cargo build --release"
 
 # Stage 2: Runtime environment for flashing
 FROM ubuntu:22.04

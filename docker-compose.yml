@@ -21,4 +21,4 @@ services:
       - /dev/ttyUSB0:/dev/ttyUSB0
     volumes:
       - ./target:/app/target
-    command: ["espflash", "flash", "/app/rotary_encoder_example", "--monitor"]
+    command: ["espflash", "flash", "/app/target/rotary_encoder_example", "--monitor"]

@@ -32,6 +32,9 @@ build_firmware() {
     echo -e "${GREEN}Building firmware using Docker...${NC}"
     docker build -t ${IMAGE_NAME}:builder --target builder .
     
+    # Create target directory if it doesn't exist
+    mkdir -p ./target
+    
     # Create a temporary container to extract the binary
     echo -e "${GREEN}Extracting binary...${NC}"
     docker create --name temp-${IMAGE_NAME} ${IMAGE_NAME}:builder
