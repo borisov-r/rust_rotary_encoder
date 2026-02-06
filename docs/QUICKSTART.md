@@ -128,10 +128,14 @@ log::set_max_level(log::LevelFilter::Info);
 
 ### Test Without Hardware
 
-Run the simulation example:
+Run the simulation example (requires specifying native target since project defaults to ESP32):
 
 ```bash
-cargo run --example simulate
+cargo run --example simulate --target x86_64-unknown-linux-gnu
+# Or on macOS:
+cargo run --example simulate --target aarch64-apple-darwin
+# Or on Windows:
+cargo run --example simulate --target x86_64-pc-windows-msvc
 ```
 
 This demonstrates the encoder logic without requiring ESP32 hardware.
