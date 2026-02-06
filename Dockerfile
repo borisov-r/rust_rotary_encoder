@@ -5,6 +5,10 @@ FROM ubuntu:22.04 AS builder
 # Avoid interactive prompts during build
 ENV DEBIAN_FRONTEND=noninteractive
 
+# Accept optional GitHub token to avoid API rate limits during espup install
+ARG GITHUB_TOKEN
+ENV GITHUB_TOKEN=${GITHUB_TOKEN}
+
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     git \
@@ -27,7 +31,7 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Install espup and setup ESP32 toolchain
 RUN cargo install espup espflash ldproxy
-RUN espup install -y
+RUN espup install
 
 # Add ESP environment to bashrc for automatic sourcing
 RUN echo '. $HOME/export-esp.sh' >> /root/.bashrc
