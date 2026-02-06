@@ -213,13 +213,13 @@ This happens when the Docker build hits GitHub's API rate limit during the `espu
    - Go to https://github.com/settings/tokens
    - Click "Generate new token (classic)"
    - Give it a name (e.g., "Docker ESP32 Build")
-   - Select scope: `public_repo` (or no scopes for read-only access to public data)
+   - **No scopes needed** for read-only access to public repository data
    - Click "Generate token"
    - Copy the token (you won't be able to see it again!)
 
 2. Build with the token:
    ```bash
-   export GITHUB_TOKEN=your_token_here
+   export GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
    ./docker-build.sh build
    ```
 
@@ -230,7 +230,7 @@ This happens when the Docker build hits GitHub's API rate limit during the `espu
      docker build --build-arg GITHUB_TOKEN=$GITHUB_TOKEN -t rust-rotary-encoder:builder --target builder .
      ```
 
-**Note:** Never commit tokens to your repository or share them publicly!
+**Note:** Never commit tokens to your repository or share them publicly! The token is only used during the Docker build process and is not stored in the final Docker image.
 
 ### Slow Build Times
 

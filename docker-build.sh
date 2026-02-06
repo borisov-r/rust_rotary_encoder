@@ -38,7 +38,7 @@ build_firmware() {
     else
         echo -e "${YELLOW}Building without GITHUB_TOKEN. If build fails with GitHub API rate limit error,${NC}"
         echo -e "${YELLOW}set GITHUB_TOKEN environment variable and try again:${NC}"
-        echo -e "${YELLOW}  export GITHUB_TOKEN=your_github_token${NC}"
+        echo -e "${YELLOW}  export GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx${NC}"
         echo -e "${YELLOW}  ./docker-build.sh build${NC}"
         docker build -t ${IMAGE_NAME}:builder --target builder .
     fi

@@ -6,6 +6,7 @@ FROM ubuntu:22.04 AS builder
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Accept optional GitHub token to avoid API rate limits during espup install
+# Note: This token is only used during build and is NOT persisted in the final image
 ARG GITHUB_TOKEN
 ENV GITHUB_TOKEN=${GITHUB_TOKEN}
 
