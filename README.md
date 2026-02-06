@@ -32,11 +32,20 @@ Connect the rotary encoder to your ESP32:
 
 ## Software Requirements
 
+### Option 1: Docker (Recommended)
+
+- **Docker** (for containerized build environment)
+- **espflash** (included in Docker image, no manual installation needed)
+
+📖 **[Complete Docker Guide](docs/DOCKER.md)** - Detailed Docker usage, troubleshooting, and advanced features
+
+### Option 2: Native Installation
+
 1. **Rust toolchain** with ESP32 support
 2. **esp-idf** framework (v5.1)
 3. **espflash** for flashing to ESP32
 
-### Installation
+#### Installation
 
 Install the required tools:
 
@@ -57,7 +66,52 @@ cargo install espflash
 
 ## Building and Flashing
 
-### For ESP32 Hardware
+You can build this project either using Docker (recommended for isolated environment) or directly on your host machine.
+
+### Option 1: Using Docker (Recommended)
+
+Docker provides an isolated build environment with all dependencies pre-configured.
+
+#### Prerequisites
+- Docker installed on your system
+- ESP32 connected via USB (for flashing)
+
+#### Building with Docker
+
+```bash
+# Build firmware using Docker
+./docker-build.sh build
+
+# Flash to ESP32 (adjust device path if needed)
+./docker-build.sh flash /dev/ttyUSB0
+
+# Or build and flash in one command
+./docker-build.sh build-flash /dev/ttyUSB0
+```
+
+The compiled binary will be available at `./target/rotary_encoder_example`.
+
+#### Using Docker Compose
+
+```bash
+# Build the firmware
+docker-compose run builder
+
+# Flash to ESP32 (make sure to adjust device path in docker-compose.yml)
+docker-compose run flasher
+```
+
+#### Interactive Development
+
+Open a shell in the build container for interactive development:
+
+```bash
+./docker-build.sh shell
+```
+
+### Option 2: Direct Build (Host Machine)
+
+#### For ESP32 Hardware
 
 ```bash
 # Build the project
