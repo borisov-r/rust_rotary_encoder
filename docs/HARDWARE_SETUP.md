@@ -99,19 +99,20 @@ Recommended pins:
 ### Safe Pins (Recommended)
 
 These pins are safe to use and support interrupts:
-- GPIO12, GPIO13 (used in example)
-- GPIO14
+- GPIO13, GPIO14 (highly recommended)
 - GPIO25, GPIO26, GPIO27
 - GPIO32, GPIO33
 
 ### Strapping Pins (Use with Caution)
 
-These pins affect boot behavior:
+These pins affect boot behavior and should be used carefully:
 - GPIO0: Boot mode selection (has pull-up)
 - GPIO2: Boot mode selection (has pull-down)
 - GPIO5: SDIO configuration (has pull-up)
-- GPIO12: Flash voltage (has pull-down)
+- GPIO12: Flash voltage (has pull-down) - can work but avoid if possible
 - GPIO15: Boot message silencing (has pull-up)
+
+**Note on GPIO12**: While it supports interrupts and works in most cases, it's a strapping pin that affects flash voltage selection. It's safer to use GPIO13/14 or GPIO25-27 when available.
 
 **Warning**: If the encoder state during boot differs from expected, the ESP32 may fail to boot.
 

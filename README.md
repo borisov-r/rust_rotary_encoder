@@ -28,7 +28,7 @@ Connect the rotary encoder to your ESP32:
 | +          | 3.3V      | Power supply |
 | GND        | GND       | Ground       |
 
-**Note**: GPIO12 and GPIO13 are recommended pins that safely support interrupts on ESP32. Avoid strapping pins (GPIO0, GPIO2, GPIO5, GPIO15) when possible to prevent boot issues.
+**Note**: GPIO12 and GPIO13 support interrupts on ESP32. GPIO12 is a strapping pin (affects flash voltage) but works in most cases. For maximum safety, consider using GPIO13/14 or GPIO25-27. Avoid other strapping pins (GPIO0, GPIO2, GPIO5, GPIO15) to prevent boot issues.
 
 ## Software Requirements
 

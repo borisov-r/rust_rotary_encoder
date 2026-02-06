@@ -89,11 +89,11 @@ fn main() {
     
     // Try to go past max
     for _ in 0..3 {
-        encoder.process_pins(true, true);
-        encoder.process_pins(false, true);
-        encoder.process_pins(false, false);
-        encoder.process_pins(true, false);
-        encoder.process_pins(true, true);
+        bounded_encoder.process_pins(true, true);
+        bounded_encoder.process_pins(false, true);
+        bounded_encoder.process_pins(false, false);
+        bounded_encoder.process_pins(true, false);
+        bounded_encoder.process_pins(true, true);
         println!("  After click: {} (should not exceed 10)", bounded_encoder.value());
     }
     
