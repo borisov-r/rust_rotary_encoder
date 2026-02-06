@@ -1,6 +1,6 @@
 # Multi-stage Docker build for ESP32 Rust projects
 # Stage 1: Build environment with all ESP32 Rust tooling
-FROM ubuntu:22.04 as builder
+FROM ubuntu:22.04 AS builder
 
 # Avoid interactive prompts during build
 ENV DEBIAN_FRONTEND=noninteractive

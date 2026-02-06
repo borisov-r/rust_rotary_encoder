@@ -37,6 +37,8 @@ Connect the rotary encoder to your ESP32:
 - **Docker** (for containerized build environment)
 - **espflash** (included in Docker image, no manual installation needed)
 
+📖 **[Complete Docker Guide](docs/DOCKER.md)** - Detailed Docker usage, troubleshooting, and advanced features
+
 ### Option 2: Native Installation
 
 1. **Rust toolchain** with ESP32 support
