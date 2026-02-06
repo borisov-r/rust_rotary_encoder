@@ -1,0 +1,35 @@
+# Git files
+.git
+.gitignore
+.github
+
+# Build artifacts
+target/
+*.bin
+*.elf
+
+# Documentation
+*.md
+docs/
+LICENSE
+PROJECT_COMPLETE.md
+IMPLEMENTATION_SUMMARY.md
+
+# Examples (if not needed for build)
+examples/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker files themselves
+Dockerfile
+.dockerignore
+docker-compose.yml

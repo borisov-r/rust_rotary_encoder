@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  builder:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    image: rust-rotary-encoder:builder
+    volumes:
+      - ./target:/project/target
+    command: ["/bin/bash", "-c", ". /root/export-esp.sh && cargo build --release"]
+
+  flasher:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: rust-rotary-encoder:flasher
+    privileged: true
+    devices:
+      - /dev/ttyUSB0:/dev/ttyUSB0
+    volumes:
+      - ./target:/app/target
+    command: ["espflash", "flash", "/app/rotary_encoder_example", "--monitor"]
