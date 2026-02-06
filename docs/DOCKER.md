@@ -234,10 +234,21 @@ This happens when the Docker build hits GitHub's API rate limit during the `espu
 
 3. For CI/CD systems:
    - **GitHub Actions**: Use `${{ secrets.GITHUB_TOKEN }}` (automatically available)
-   - **Other CI**: Store token as a secret and pass it as an environment variable:
-     ```bash
-     GITHUB_TOKEN=$CI_SECRET_TOKEN ./docker-build.sh build
-     ```
+   - **GitLab CI**: Use `$CI_JOB_TOKEN` or a project/group access token stored in CI/CD variables
+   - **Jenkins**: Store token as a credential and reference it in your pipeline
+   - **CircleCI**: Store token in project environment variables and use `$GITHUB_TOKEN`
+   
+   Example for GitHub Actions:
+   ```bash
+   GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} ./docker-build.sh build
+   ```
+   
+   Example for other CI systems:
+   ```bash
+   # Replace $YOUR_CI_SECRET_VAR with your CI system's secret variable
+   GITHUB_TOKEN=$YOUR_CI_SECRET_VAR ./docker-build.sh build
+   ```
+   
    - **Manual Docker commands** (for advanced users):
      ```bash
      echo -n "$GITHUB_TOKEN" | docker build --secret id=github_token,src=/dev/stdin -t rust-rotary-encoder:builder --target builder .
