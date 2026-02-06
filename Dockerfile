@@ -27,12 +27,10 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Install espup and setup ESP32 toolchain
 RUN cargo install espup espflash ldproxy
-RUN espup install
+RUN espup install -y
 
-# Create a script to dynamically set ESP environment paths
-RUN echo '#!/bin/bash' > /root/setup-esp-env.sh && \
-    echo 'source /root/export-esp.sh' >> /root/setup-esp-env.sh && \
-    chmod +x /root/setup-esp-env.sh
+# Add ESP environment to bashrc for automatic sourcing
+RUN echo '. $HOME/export-esp.sh' >> /root/.bashrc
 
 # Set working directory
 WORKDIR /project
