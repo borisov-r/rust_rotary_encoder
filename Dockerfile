@@ -5,6 +5,11 @@ FROM ubuntu:22.04 AS builder
 # Avoid interactive prompts during build
 ENV DEBIAN_FRONTEND=noninteractive
 
+# Accept optional GitHub token to avoid API rate limits during espup install
+# Note: This token is only used during build and is NOT persisted in the final image
+ARG GITHUB_TOKEN
+ENV GITHUB_TOKEN=${GITHUB_TOKEN}
+
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     git \
@@ -29,10 +34,8 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 RUN cargo install espup espflash ldproxy
 RUN espup install
 
-# Create a script to dynamically set ESP environment paths
-RUN echo '#!/bin/bash' > /root/setup-esp-env.sh && \
-    echo 'source /root/export-esp.sh' >> /root/setup-esp-env.sh && \
-    chmod +x /root/setup-esp-env.sh
+# Add ESP environment to bashrc for automatic sourcing
+RUN echo '. $HOME/export-esp.sh' >> /root/.bashrc
 
 # Set working directory
 WORKDIR /project

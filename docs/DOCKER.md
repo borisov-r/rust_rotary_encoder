@@ -198,6 +198,40 @@ If the Docker build fails:
    docker build -t rust-rotary-encoder:builder --target builder . --no-cache
    ```
 
+### GitHub API Rate Limit Error
+
+If you see an error like:
+```
+[warn]: Failed to get latest Xtensa Rust version: HTTP GET Error: GitHub API returned status code: 403 Forbidden
+```
+
+This happens when the Docker build hits GitHub's API rate limit during the `espup install` step. Without authentication, GitHub only allows 60 API requests per hour per IP address.
+
+**Solution: Use a GitHub Personal Access Token**
+
+1. Generate a GitHub Personal Access Token:
+   - Go to https://github.com/settings/tokens
+   - Click "Generate new token (classic)"
+   - Give it a name (e.g., "Docker ESP32 Build")
+   - **No scopes needed** for read-only access to public repository data
+   - Click "Generate token"
+   - Copy the token (you won't be able to see it again!)
+
+2. Build with the token:
+   ```bash
+   export GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+   ./docker-build.sh build
+   ```
+
+3. For CI/CD systems:
+   - **GitHub Actions**: Use `${{ secrets.GITHUB_TOKEN }}` (automatically available)
+   - **Other CI**: Store token as a secret and pass it as a build arg:
+     ```bash
+     docker build --build-arg GITHUB_TOKEN=$GITHUB_TOKEN -t rust-rotary-encoder:builder --target builder .
+     ```
+
+**Note:** Never commit tokens to your repository or share them publicly! The token is only used during the Docker build process and is not stored in the final Docker image.
+
 ### Slow Build Times
 
 First build takes 15-30 minutes as it installs all tooling. Subsequent builds are faster due to Docker layer caching.
@@ -246,7 +280,9 @@ jobs:
       - uses: actions/checkout@v3
       
       - name: Build Docker image
-        run: docker build -t rust-rotary-encoder:builder --target builder .
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: docker build --build-arg GITHUB_TOKEN=$GITHUB_TOKEN -t rust-rotary-encoder:builder --target builder .
       
       - name: Extract binary
         run: |

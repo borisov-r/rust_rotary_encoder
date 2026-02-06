@@ -30,7 +30,18 @@ print_usage() {
 
 build_firmware() {
     echo -e "${GREEN}Building firmware using Docker...${NC}"
-    docker build -t ${IMAGE_NAME}:builder --target builder .
+    
+    # Build with optional GITHUB_TOKEN to avoid API rate limits
+    if [ -n "${GITHUB_TOKEN}" ]; then
+        echo -e "${YELLOW}Using GITHUB_TOKEN for espup install${NC}"
+        docker build --build-arg GITHUB_TOKEN="${GITHUB_TOKEN}" -t ${IMAGE_NAME}:builder --target builder .
+    else
+        echo -e "${YELLOW}Building without GITHUB_TOKEN. If build fails with GitHub API rate limit error,${NC}"
+        echo -e "${YELLOW}set GITHUB_TOKEN environment variable and try again:${NC}"
+        echo -e "${YELLOW}  export GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx${NC}"
+        echo -e "${YELLOW}  ./docker-build.sh build${NC}"
+        docker build -t ${IMAGE_NAME}:builder --target builder .
+    fi
     
     # Create target directory if it doesn't exist
     mkdir -p ./target
