@@ -4,7 +4,7 @@
 fn main() {
     // Check if we're building for an ESP32 target
     let target = std::env::var("TARGET").unwrap_or_default();
-    
+
     if target.contains("esp") || target.contains("xtensa") {
         // Only configure ESP-IDF for ESP32 targets
         // Note: This will only work if embuild is properly configured with espidf feature
