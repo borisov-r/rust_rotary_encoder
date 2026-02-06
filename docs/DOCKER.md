@@ -226,15 +226,24 @@ This happens when the Docker build hits GitHub's API rate limit during the `espu
    export GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
    ./docker-build.sh build
    ```
+   
+   The script uses Docker BuildKit's secret mount feature to securely pass the token. The token is:
+   - Mounted temporarily during the build step
+   - Never stored in any Docker image layer
+   - Automatically removed after the build completes
 
 3. For CI/CD systems:
    - **GitHub Actions**: Use `${{ secrets.GITHUB_TOKEN }}` (automatically available)
-   - **Other CI**: Store token as a secret and pass it as a build arg:
+   - **Other CI**: Store token as a secret and pass it as an environment variable:
      ```bash
-     docker build --build-arg GITHUB_TOKEN=$GITHUB_TOKEN -t rust-rotary-encoder:builder --target builder .
+     GITHUB_TOKEN=$CI_SECRET_TOKEN ./docker-build.sh build
+     ```
+   - **Manual Docker commands** (for advanced users):
+     ```bash
+     echo -n "$GITHUB_TOKEN" | docker build --secret id=github_token,src=/dev/stdin -t rust-rotary-encoder:builder --target builder .
      ```
 
-**Note:** Never commit tokens to your repository or share them publicly! The token is only used during the Docker build process and is not stored in the final Docker image.
+**Note:** The token is securely handled using Docker BuildKit secrets and is never persisted in any image layer or build history. Never commit tokens to your repository or share them publicly!
 
 ### Slow Build Times
 
@@ -283,10 +292,15 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       
-      - name: Build Docker image
+      - name: Build Docker image with BuildKit secrets
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: docker build --build-arg GITHUB_TOKEN=$GITHUB_TOKEN -t rust-rotary-encoder:builder --target builder .
+        run: |
+          export DOCKER_BUILDKIT=1
+          echo -n "$GITHUB_TOKEN" | docker build \
+            --secret id=github_token,src=/dev/stdin \
+            -t rust-rotary-encoder:builder \
+            --target builder .
       
       - name: Extract binary
         run: |
