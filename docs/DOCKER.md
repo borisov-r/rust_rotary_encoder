@@ -233,25 +233,31 @@ This happens when the Docker build hits GitHub's API rate limit during the `espu
    - Automatically removed after the build completes
 
 3. For CI/CD systems:
-   - **GitHub Actions**: Use `${{ secrets.GITHUB_TOKEN }}` (automatically available)
+   - **GitHub Actions**: Use `${{ secrets.GITHUB_TOKEN }}` (automatically available in workflows)
    - **GitLab CI**: Use `$CI_JOB_TOKEN` or a project/group access token stored in CI/CD variables
    - **Jenkins**: Store token as a credential and reference it in your pipeline
    - **CircleCI**: Store token in project environment variables and use `$GITHUB_TOKEN`
    
-   Example for GitHub Actions:
+   Example for standalone scripts (with your own token variable):
    ```bash
-   GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} ./docker-build.sh build
+   # Set your token variable first, then run the build script
+   export GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+   ./docker-build.sh build
    ```
    
-   Example for other CI systems:
+   Example for other CI systems (replace placeholder with actual secret):
    ```bash
-   # Replace $YOUR_CI_SECRET_VAR with your CI system's secret variable
+   # Replace $YOUR_CI_SECRET_VAR with your CI system's secret variable name
    GITHUB_TOKEN=$YOUR_CI_SECRET_VAR ./docker-build.sh build
    ```
    
    - **Manual Docker commands** (for advanced users):
      ```bash
-     echo -n "$GITHUB_TOKEN" | docker build --secret id=github_token,src=/dev/stdin -t rust-rotary-encoder:builder --target builder .
+     # Build with token using BuildKit secrets
+     echo -n "$GITHUB_TOKEN" | docker build \
+       --secret id=github_token,src=/dev/stdin \
+       -t rust-rotary-encoder:builder \
+       --target builder .
      ```
 
 **Note:** The token is securely handled using Docker BuildKit secrets and is never persisted in any image layer or build history. Never commit tokens to your repository or share them publicly!
