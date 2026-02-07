@@ -1,37 +1,19 @@
 # Multi-stage Docker build for ESP32 Rust projects
 # Stage 1: Build environment with all ESP32 Rust tooling
-FROM ubuntu:22.04 AS builder
-
-# Avoid interactive prompts during build
-ENV DEBIAN_FRONTEND=noninteractive
-
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    git \
-    curl \
-    gcc \
-    clang \
-    ninja-build \
-    cmake \
-    libuv1-dev \
-    libusb-1.0-0-dev \
-    python3 \
-    python3-pip \
-    pkg-config \
-    libssl-dev \
-    && rm -rf /var/lib/apt/lists/*
+# Using official Espressif IDF image (has ESP-IDF pre-installed) and adding Rust
+FROM espressif/idf:v5.1 AS builder
 
 # Install Rust
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain none
 ENV PATH="/root/.cargo/bin:${PATH}"
 
-# Install espup and setup ESP32 toolchain
-RUN cargo install espup espflash ldproxy
-# Install ESP32 toolchain (without requiring GitHub token)
-RUN espup install
+# Install espup and setup ESP32 Rust toolchain
+RUN cargo install espup
+RUN espup install --targets esp32
+RUN chmod -R a+rX /root/.rustup || true
 
-# Add ESP environment to bashrc for automatic sourcing
-RUN echo '. $HOME/export-esp.sh' >> /root/.bashrc
+# Source ESP environment
+RUN echo '. /root/export-esp.sh' >> /root/.bashrc
 
 # Set working directory
 WORKDIR /project
@@ -43,7 +25,11 @@ COPY src src
 COPY build.rs .
 COPY sdkconfig.defaults .
 
-# Build the project in release mode with ESP environment
+# Set environment for esp-idf-sys to use pre-installed ESP-IDF
+ENV IDF_PATH=/opt/esp/idf
+ENV IDF_TOOLS_PATH=/opt/esp
+
+# Build the project in release mode
 RUN bash -c "source /root/export-esp.sh && cargo build --release"
 
 # Stage 2: Runtime environment for flashing
