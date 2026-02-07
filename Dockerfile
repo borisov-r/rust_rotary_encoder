@@ -5,9 +5,6 @@ FROM ubuntu:22.04 AS builder
 # Avoid interactive prompts during build
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Accept optional GitHub token to avoid API rate limits during espup install
-# Note: This token is only used during build via BuildKit secret mount and is NOT persisted in any image layer
-
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     git \
@@ -30,14 +27,8 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Install espup and setup ESP32 toolchain
 RUN cargo install espup espflash ldproxy
-# Use BuildKit secret mount for GITHUB_TOKEN (ephemeral, not persisted in any layer)
-# Falls back to unauthenticated install if token not provided
-RUN --mount=type=secret,id=github_token,required=false \
-    if [ -f /run/secrets/github_token ]; then \
-        GITHUB_TOKEN=$(cat /run/secrets/github_token) espup install; \
-    else \
-        espup install; \
-    fi
+# Install ESP32 toolchain (without requiring GitHub token)
+RUN espup install
 
 # Add ESP environment to bashrc for automatic sourcing
 RUN echo '. $HOME/export-esp.sh' >> /root/.bashrc
