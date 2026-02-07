@@ -207,8 +207,6 @@ To speed up builds:
 - Use a local Docker registry for caching
 
 **Note:** If you encounter GitHub API rate limit errors during `espup install`, the build may take longer or fail. In most cases, waiting an hour and retrying will resolve the issue, as GitHub's rate limit resets hourly.
-- Ensure Docker has sufficient CPU cores allocated
-- Use a local Docker registry for caching
 
 ## Files Created
 
