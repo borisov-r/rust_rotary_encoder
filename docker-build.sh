@@ -31,10 +31,13 @@ print_usage() {
 build_firmware() {
     echo -e "${GREEN}Building firmware using Docker...${NC}"
     
-    # Build with optional GITHUB_TOKEN to avoid API rate limits
+    # Enable BuildKit for secret support
+    export DOCKER_BUILDKIT=1
+    
+    # Build with optional GITHUB_TOKEN using BuildKit secrets
     if [ -n "${GITHUB_TOKEN}" ]; then
-        echo -e "${YELLOW}Using GITHUB_TOKEN for espup install${NC}"
-        docker build --build-arg GITHUB_TOKEN="${GITHUB_TOKEN}" -t ${IMAGE_NAME}:builder --target builder .
+        echo -e "${YELLOW}Using GITHUB_TOKEN for espup install (via BuildKit secret mount)${NC}"
+        echo -n "${GITHUB_TOKEN}" | docker build --secret id=github_token,src=/dev/stdin -t ${IMAGE_NAME}:builder --target builder .
     else
         echo -e "${YELLOW}Building without GITHUB_TOKEN. If build fails with GitHub API rate limit error,${NC}"
         echo -e "${YELLOW}set GITHUB_TOKEN environment variable and try again:${NC}"
