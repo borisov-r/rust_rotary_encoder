@@ -198,76 +198,15 @@ If the Docker build fails:
    docker build -t rust-rotary-encoder:builder --target builder . --no-cache
    ```
 
-### GitHub API Rate Limit or Authentication Error
-
-If you see an error like:
-```
-[warn]: Failed to get latest Xtensa Rust version: HTTP GET Error: GitHub API returned status code: 403 Forbidden
-```
-or:
-```
-[warn]: Failed to get latest Xtensa Rust version: HTTP GET Error: GitHub API returned status code: 401 Unauthorized
-```
-
-This happens when the Docker build hits GitHub's API rate limit during the `espup install` step or when GitHub requires authentication. Without authentication, GitHub only allows 60 API requests per hour per IP address.
-
-**Solution: Use a GitHub Personal Access Token**
-
-1. Generate a GitHub Personal Access Token:
-   - Go to https://github.com/settings/tokens
-   - Click "Generate new token (classic)"
-   - Give it a name (e.g., "Docker ESP32 Build")
-   - **No scopes needed** for read-only access to public repository data
-   - Click "Generate token"
-   - Copy the token (you won't be able to see it again!)
-
-2. Build with the token:
-   ```bash
-   export GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-   ./docker-build.sh build
-   ```
-   
-   The script uses Docker BuildKit's secret mount feature to securely pass the token. The token is:
-   - Mounted temporarily during the build step
-   - Never stored in any Docker image layer
-   - Automatically removed after the build completes
-
-3. For CI/CD systems:
-   - **GitHub Actions**: Use `${{ secrets.GITHUB_TOKEN }}` (automatically available in workflows)
-   - **GitLab CI**: Use `$CI_JOB_TOKEN` or a project/group access token stored in CI/CD variables
-   - **Jenkins**: Store token as a credential and reference it in your pipeline
-   - **CircleCI**: Store token in project environment variables and use `$GITHUB_TOKEN`
-   
-   Example for standalone scripts (with your own token variable):
-   ```bash
-   # Set your token variable first, then run the build script
-   export GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-   ./docker-build.sh build
-   ```
-   
-   Example for other CI systems (replace placeholder with actual secret):
-   ```bash
-   # Replace $YOUR_CI_SECRET_VAR with your CI system's secret variable name
-   GITHUB_TOKEN=$YOUR_CI_SECRET_VAR ./docker-build.sh build
-   ```
-   
-   - **Manual Docker commands** (for advanced users):
-     ```bash
-     # Build with token using BuildKit secrets
-     echo -n "$GITHUB_TOKEN" | docker build \
-       --secret id=github_token,src=/dev/stdin \
-       -t rust-rotary-encoder:builder \
-       --target builder .
-     ```
-
-**Note:** The token is securely handled using Docker BuildKit secrets and is never persisted in any image layer or build history. Never commit tokens to your repository or share them publicly!
-
 ### Slow Build Times
 
 First build takes 15-30 minutes as it installs all tooling. Subsequent builds are faster due to Docker layer caching.
 
 To speed up builds:
-- Use Docker BuildKit: `DOCKER_BUILDKIT=1 docker build ...`
+- Ensure Docker has sufficient CPU cores allocated
+- Use a local Docker registry for caching
+
+**Note:** If you encounter GitHub API rate limit errors during `espup install`, the build may take longer or fail. In most cases, waiting an hour and retrying will resolve the issue, as GitHub's rate limit resets hourly.
 - Ensure Docker has sufficient CPU cores allocated
 - Use a local Docker registry for caching
 
@@ -309,13 +248,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       
-      - name: Build Docker image with BuildKit secrets
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build Docker image
         run: |
-          export DOCKER_BUILDKIT=1
-          echo -n "$GITHUB_TOKEN" | docker build \
-            --secret id=github_token,src=/dev/stdin \
+          docker build \
             -t rust-rotary-encoder:builder \
             --target builder .
       
