@@ -111,6 +111,11 @@ fn main() -> anyhow::Result<()> {
     let mut last_angle = encoder.angle();
     info!("Current angle: {} degrees", last_angle);
 
+    // CRITICAL: Keep PinDriver objects alive to maintain interrupt subscriptions
+    // Store them in a scope that lasts for the entire program execution
+    let _clk_driver = clk_driver;
+    let _dt_driver = dt_driver;
+
     loop {
         thread::sleep(Duration::from_millis(50));
 
