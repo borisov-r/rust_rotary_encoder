@@ -88,7 +88,7 @@ fn main() -> anyhow::Result<()> {
         dt_driver.subscribe(move || {
             // Critical: We're in ISR context, minimize work here
             // NOTE: Cannot use logging here as it acquires locks (causes abort on ESP32)
-            
+
             // SAFETY: Reading GPIO registers is safe in ISR
             let clk_state = esp_idf_svc::sys::gpio_get_level(21) != 0;
             let dt_state = esp_idf_svc::sys::gpio_get_level(22) != 0;
