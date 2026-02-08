@@ -18,3 +18,10 @@ CONFIG_FREERTOS_HZ=1000
 
 # ESP32 specific
 CONFIG_ESP32_DEFAULT_CPU_FREQ_240=y
+
+# Timer configuration
+# Note: The timer_group deprecation warning should be resolved by using
+# compatible esp-idf-svc versions (0.51.0+) which use the new gptimer driver.
+# If you still see the warning, run: ./fix-dependencies.sh
+# Only uncomment the line below as a temporary workaround:
+# CONFIG_GPTIMER_SUPPRESS_DEPRECATE_WARN=y

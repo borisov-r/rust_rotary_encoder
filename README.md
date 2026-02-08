@@ -32,12 +32,12 @@ Connect the rotary encoder to your ESP32:
 
 | Encoder Pin | ESP32 Pin | Description |
 |------------|-----------|-------------|
-| CLK        | GPIO12    | Clock signal |
-| DT         | GPIO13    | Data signal  |
+| CLK        | GPIO21    | Clock signal |
+| DT         | GPIO22    | Data signal  |
 | +          | 3.3V      | Power supply |
 | GND        | GND       | Ground       |
 
-**Note**: GPIO12 and GPIO13 support interrupts on ESP32. GPIO12 is a strapping pin (affects flash voltage) but works in most cases. For maximum safety, consider using GPIO13/14 or GPIO25-27. Avoid other strapping pins (GPIO0, GPIO2, GPIO5, GPIO15) to prevent boot issues.
+**Note**: GPIO21 and GPIO22 are safe, interrupt-capable pins on ESP32. They are not strapping pins, making them ideal for this application. Avoid using strapping pins (GPIO0, GPIO2, GPIO5, GPIO12, GPIO15) to prevent boot issues.
 
 ## Software Requirements
 
@@ -171,8 +171,8 @@ I (123) rust_rotary_encoder: ==============================================
 I (124) rust_rotary_encoder: ESP32 Rotary Encoder Application Starting...
 I (125) rust_rotary_encoder: ==============================================
 I (126) rust_rotary_encoder: Configuring rotary encoder on pins:
-I (127) rust_rotary_encoder:   CLK: GPIO12
-I (128) rust_rotary_encoder:   DT:  GPIO13
+I (127) rust_rotary_encoder:   CLK: GPIO21
+I (128) rust_rotary_encoder:   DT:  GPIO22
 I (129) rust_rotary_encoder: Rotary encoder initialized:
 I (130) rust_rotary_encoder:   Range: 0-359 degrees (wrap mode)
 I (131) rust_rotary_encoder:   Increment: 1 degree per click
@@ -235,8 +235,8 @@ log::set_max_level(log::LevelFilter::Debug);
 Modify the GPIO pin numbers in `src/main.rs`:
 
 ```rust
-let clk_pin = peripherals.pins.gpio12;  // Change to your CLK pin
-let dt_pin = peripherals.pins.gpio13;   // Change to your DT pin
+let clk_pin = peripherals.pins.gpio21;  // Change to your CLK pin
+let dt_pin = peripherals.pins.gpio22;   // Change to your DT pin
 ```
 
 ### Change Range
