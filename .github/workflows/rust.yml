@@ -44,8 +44,6 @@ jobs:
       
     - name: Install Rust
       uses: dtolnay/rust-toolchain@stable
-      with:
-        components: rust-src
         
     - name: Install espup
       run: |
