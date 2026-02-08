@@ -37,9 +37,12 @@ build_firmware() {
     # Create target directory if it doesn't exist
     mkdir -p ./target
     
-    # Create a temporary container to extract the binary
+    # Run the container to build the firmware, mounting the source code
+    echo -e "${GREEN}Running build in container...${NC}"
+    docker run --name temp-${IMAGE_NAME} -v ${SCRIPT_DIR}:/project ${IMAGE_NAME}:builder
+    
+    # Extract the binary from the container
     echo -e "${GREEN}Extracting binary...${NC}"
-    docker create --name temp-${IMAGE_NAME} ${IMAGE_NAME}:builder
     docker cp temp-${IMAGE_NAME}:/project/target/xtensa-esp32-espidf/release/${BINARY_NAME} ./target/${BINARY_NAME}
     docker rm temp-${IMAGE_NAME}
     

@@ -26,14 +26,14 @@ fn main() -> anyhow::Result<()> {
     let peripherals = Peripherals::take()?;
 
     // Configure pins for rotary encoder
-    // Using GPIO12 for CLK and GPIO13 for DT (same as MicroPython example)
+    // Using GPIO21 for CLK and GPIO22 for DT
     // These are safe pins that support interrupts on ESP32
-    let clk_pin = peripherals.pins.gpio12;
-    let dt_pin = peripherals.pins.gpio13;
+    let clk_pin = peripherals.pins.gpio21;
+    let dt_pin = peripherals.pins.gpio22;
 
     info!("Configuring rotary encoder on pins:");
-    info!("  CLK: GPIO12");
-    info!("  DT:  GPIO13");
+    info!("  CLK: GPIO21");
+    info!("  DT:  GPIO22");
 
     // Create the rotary encoder instance
     // Using angle range 0-359 degrees with wrap mode
@@ -77,8 +77,8 @@ fn main() -> anyhow::Result<()> {
 
             // SAFETY: Reading GPIO registers is safe in ISR
             // We use raw GPIO read to avoid mutex/lock issues
-            let clk_state = esp_idf_svc::sys::gpio_get_level(12) != 0;
-            let dt_state = esp_idf_svc::sys::gpio_get_level(13) != 0;
+            let clk_state = esp_idf_svc::sys::gpio_get_level(21) != 0;
+            let dt_state = esp_idf_svc::sys::gpio_get_level(22) != 0;
 
             info!("[ISR-CLK] CLK={}, DT={}", clk_state, dt_state);
             encoder_for_isr.process_pins(clk_state, dt_state);
@@ -87,8 +87,8 @@ fn main() -> anyhow::Result<()> {
         let encoder_for_isr2 = encoder.clone();
         dt_driver.subscribe(move || {
             // SAFETY: Reading GPIO registers is safe in ISR
-            let clk_state = esp_idf_svc::sys::gpio_get_level(12) != 0;
-            let dt_state = esp_idf_svc::sys::gpio_get_level(13) != 0;
+            let clk_state = esp_idf_svc::sys::gpio_get_level(21) != 0;
+            let dt_state = esp_idf_svc::sys::gpio_get_level(22) != 0;
 
             info!("[ISR-DT] CLK={}, DT={}", clk_state, dt_state);
             encoder_for_isr2.process_pins(clk_state, dt_state);
