@@ -16,6 +16,7 @@ const R_CW_3: u8 = 0x3;
 const R_CCW_1: u8 = 0x4;
 const R_CCW_2: u8 = 0x5;
 const R_CCW_3: u8 = 0x6;
+#[allow(dead_code)] // Used in TRANSITION_TABLE but not referenced directly
 const R_ILLEGAL: u8 = 0x7;
 
 const STATE_MASK: u8 = 0x07;

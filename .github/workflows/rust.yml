@@ -1,4 +1,4 @@
-name: Rust CI
+name: CI
 
 on:
   push:
@@ -8,53 +8,236 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  # Note: These WiFi credentials are placeholder values for CI compilation only.
+  # They satisfy the build system requirements but are non-functional.
+  # To use real WiFi, you must build from source with actual credentials.
+  WIFI_SSID: "test_ssid"
+  WIFI_PASS: "test_password"
 
 jobs:
-  check:
-    name: Check and Test
+  build-esp32:
+    name: Build for ESP32
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     
     steps:
-    - uses: actions/checkout@v3
-    
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Temporarily move rust-toolchain.toml
+      run: |
+        # Move rust-toolchain.toml to avoid toolchain conflict during setup
+        # It will be restored after espup installs the ESP toolchain
+        mv rust-toolchain.toml rust-toolchain.toml.bak
+      
     - name: Install Rust
-      uses: actions-rs/toolchain@v1
+      uses: dtolnay/rust-toolchain@stable
+        
+    - name: Install espup
+      run: |
+        cargo install espup
+        espup install
+        
+    - name: Install ldproxy
+      run: cargo install ldproxy
+      
+    - name: Restore rust-toolchain.toml
+      if: always()
+      run: |
+        # Restore rust-toolchain.toml now that ESP toolchain is installed
+        # Use if statement to avoid error if backup doesn't exist
+        if [ -f rust-toolchain.toml.bak ]; then
+          mv rust-toolchain.toml.bak rust-toolchain.toml
+        fi
+          
+    - name: Cache cargo registry
+      uses: actions/cache@v4
       with:
-        profile: minimal
-        toolchain: stable
-        override: true
-        components: rustfmt, clippy
+        path: ~/.cargo/registry
+        key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-registry-
+          
+    - name: Cache cargo index
+      uses: actions/cache@v4
+      with:
+        path: ~/.cargo/git
+        key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-index-
+          
+    - name: Cache target directory
+      uses: actions/cache@v4
+      with:
+        path: target
+        key: ${{ runner.os }}-target-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-target-
     
-    - name: Check formatting
-      run: cargo fmt -- --check
-      
-    - name: Run clippy (native target)
-      run: cargo clippy --example simulate --target x86_64-unknown-linux-gnu --all-features -- -D warnings || true
-      # Note: Some warnings expected due to ESP32-specific code
-      
-    - name: Build library for native target
-      run: cargo build --lib --target x86_64-unknown-linux-gnu
-      
-    - name: Build simulation example
-      run: cargo build --example simulate --target x86_64-unknown-linux-gnu
-      
-    - name: Run simulation example
-      run: cargo run --example simulate --target x86_64-unknown-linux-gnu
+    - name: Build project
+      run: |
+        . $HOME/export-esp.sh
+        cargo build --release
+        
+    - name: Verify build output
+      run: |
+        if [ ! -f target/xtensa-esp32-espidf/release/rotary_encoder_example ]; then
+          echo "Error: Build binary not found at expected location"
+          exit 1
+        fi
+        ls -lh target/xtensa-esp32-espidf/release/rotary_encoder_example
+        
+    - name: Upload build artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: rotary-encoder-esp32-firmware
+        path: target/xtensa-esp32-espidf/release/rotary_encoder_example
+        if-no-files-found: error
+    
+    # Create automatic release for successful builds on main branch
+    - name: Generate version tag
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      id: version
+      shell: bash
+      run: |
+        # Use date-based versioning (UTC): v2026.02.08
+        DATE_VERSION=$(date -u +%Y.%m.%d)
+        BASE_TAG="v${DATE_VERSION}"
+        
+        # Check if a release with this date already exists
+        # If so, append a build number (.1, .2, etc.)
+        BUILD_NUM=""
+        TAG="${BASE_TAG}"
+        
+        # Use GitHub API to check existing releases
+        HTTP_CODE=$(curl -s -w "%{http_code}" -o /tmp/releases.json \
+          -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          "https://api.github.com/repos/${{ github.repository }}/releases")
+        
+        if [ "$HTTP_CODE" -ne 200 ]; then
+          echo "Error: Failed to fetch existing releases (HTTP $HTTP_CODE)"
+          echo "Cannot safely determine next version tag. Failing to prevent duplicates."
+          exit 1
+        fi
+        
+        # Escape dots in BASE_TAG for regex matching
+        BASE_TAG_ESCAPED=$(echo "$BASE_TAG" | sed 's/\./\\./g')
+        
+        # Extract all tags that start with our base tag for today
+        EXISTING_TAGS=$(grep -o "\"tag_name\": \"${BASE_TAG}[^\"]*\"" /tmp/releases.json | \
+          sed 's/.*"tag_name": "\([^"]*\)".*/\1/' || echo "")
+        
+        if [ -n "$EXISTING_TAGS" ]; then
+          echo "Found existing releases for today:"
+          echo "$EXISTING_TAGS"
+          
+          # Find the highest build number
+          # Handle both base tag (no suffix) and numbered tags (.1, .2, etc.)
+          MAX_BUILD=0
+          while IFS= read -r existing_tag; do
+            if [ "$existing_tag" = "$BASE_TAG" ]; then
+              # Base tag exists without number, so next should be .1
+              MAX_BUILD=0
+            elif [[ "$existing_tag" =~ ^${BASE_TAG_ESCAPED}\.([0-9]+)$ ]]; then
+              # Extract the build number
+              BUILD="${BASH_REMATCH[1]}"
+              if [ "$BUILD" -gt "$MAX_BUILD" ]; then
+                MAX_BUILD="$BUILD"
+              fi
+            fi
+          done <<< "$EXISTING_TAGS"
+          
+          BUILD_NUM=$((MAX_BUILD + 1))
+          TAG="${BASE_TAG}.${BUILD_NUM}"
+          echo "Incrementing to build number: ${BUILD_NUM}"
+        fi
+        
+        echo "version_tag=${TAG}" >> $GITHUB_OUTPUT
+        echo "Generated version tag: ${TAG}"
+    
+    - name: Prepare release artifacts
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      run: |
+        mkdir -p release-artifacts
+        cp target/xtensa-esp32-espidf/release/rotary_encoder_example release-artifacts/rotary_encoder_example-esp32-${{ steps.version.outputs.version_tag }}
+        cp README.md release-artifacts/
+        if [ -f LICENSE ]; then
+          cp LICENSE release-artifacts/
+        fi
+    
+    - name: Create Release
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ steps.version.outputs.version_tag }}
+        name: Release ${{ steps.version.outputs.version_tag }}
+        files: |
+          release-artifacts/*
+        body: |
+          ## Rust Rotary Encoder ${{ steps.version.outputs.version_tag }}
+          
+          **Automated release** from commit ${{ github.sha }}
+          
+          ### 📥 Quick Flash Instructions
+          ```bash
+          espflash flash --monitor rotary_encoder_example-esp32-${{ steps.version.outputs.version_tag }}
+          ```
+          
+          **⚠️ Important:** Pre-built firmware contains placeholder WiFi credentials (non-functional). To connect to an actual WiFi network, you must build from source with real credentials.
+          
+          ### 📚 Setup Instructions
+          1. Download the firmware binary (`rotary_encoder_example-esp32-${{ steps.version.outputs.version_tag }}`)
+          2. Flash to your ESP32 using espflash or esptool
+          3. See [README.md](https://github.com/${{ github.repository }}/blob/${{ github.sha }}/README.md) for wiring and usage instructions
+          
+          ### 🔑 WiFi Configuration
+          The pre-built firmware contains non-functional placeholder WiFi credentials used only for compilation. To connect to a real WiFi network, you must build from source with actual credentials. See the documentation for details.
+          
+          ### 📝 Changes
+          See the [commit history](https://github.com/${{ github.repository }}/commits/${{ github.sha }}) for details.
+        draft: false
+        prerelease: false
+        generate_release_notes: true
+        make_latest: true
+        fail_on_unmatched_files: true
 
-  docs:
-    name: Documentation
+  docker:
+    name: Docker Build
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
-    - name: Install Rust
-      uses: actions-rs/toolchain@v1
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Build base image
+      uses: docker/build-push-action@v5
       with:
-        profile: minimal
-        toolchain: stable
-        override: true
+        context: .
+        target: base
+        tags: rust-rotary-encoder:base
+        cache-from: type=gha
     
-    - name: Check documentation builds
-      run: cargo doc --no-deps --lib --target x86_64-unknown-linux-gnu || true
-      # May have warnings but should not fail completely
+    - name: Build builder image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        target: builder
+        tags: rust-rotary-encoder:builder
+        cache-from: type=gha
+    
+    - name: Build flasher image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        target: flasher
+        tags: rust-rotary-encoder:flasher
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+    
+    - name: Test docker-compose configuration
+      run: docker compose config --quiet

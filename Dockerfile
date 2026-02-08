@@ -1,7 +1,8 @@
 # Dockerfile for building rotary encoder firmware for ESP32
 # This provides a reproducible build environment with all dependencies pre-installed
 
-FROM ubuntu:22.04
+# Stage 1: Base image with all build tools
+FROM ubuntu:22.04 AS base
 
 # Prevent interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
@@ -36,6 +37,9 @@ RUN cargo install espup
 # Install ldproxy
 RUN cargo install ldproxy
 
+# Stage 2: Builder stage for building the firmware
+FROM base AS builder
+
 # Set up ESP Rust toolchain
 # This step is run when the container starts to avoid GitHub API rate limits during image build
 # You can also set this up manually with: docker run ... /bin/bash -c "espup install && cargo build --release"
@@ -62,3 +66,14 @@ CMD ["/bin/bash", "-c", "\
     echo '' && \
     echo 'To flash: espflash flash --monitor target/xtensa-esp32-espidf/release/rotary_encoder_example'\
 "]
+
+# Stage 3: Flasher stage (default) with espflash for flashing firmware
+FROM base AS flasher
+
+WORKDIR /app
+
+# Install espflash for flashing
+RUN cargo install espflash
+
+# Default command for flashing
+CMD ["espflash", "--help"]
