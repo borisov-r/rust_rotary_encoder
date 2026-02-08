@@ -1,57 +1,64 @@
-# Multi-stage Docker build for ESP32 Rust projects
-# Stage 1: Build environment with all ESP32 Rust tooling
-# Using official Espressif IDF image (has ESP-IDF pre-installed) and adding Rust
-FROM espressif/idf:v5.1 AS builder
+# Dockerfile for building rotary encoder firmware for ESP32
+# This provides a reproducible build environment with all dependencies pre-installed
+
+FROM ubuntu:22.04
+
+# Prevent interactive prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    gcc \
+    clang \
+    ninja-build \
+    cmake \
+    libuv1-dev \
+    libssl-dev \
+    libpython3-dev \
+    python3 \
+    python3-pip \
+    python3-venv \
+    pkg-config \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install Rust
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain none
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
 ENV PATH="/root/.cargo/bin:${PATH}"
 
-# Install espup and setup ESP32 Rust toolchain
-RUN cargo install espup
-RUN espup install --targets esp32
-RUN chmod -R a+rX /root/.rustup || true
+# Install Rust components needed for ESP32
+RUN rustup component add rust-src
 
-# Source ESP environment
-RUN echo '. /root/export-esp.sh' >> /root/.bashrc
+# Install espup
+RUN cargo install espup
+
+# Install ldproxy
+RUN cargo install ldproxy
+
+# Set up ESP Rust toolchain
+# This step is run when the container starts to avoid GitHub API rate limits during image build
+# You can also set this up manually with: docker run ... /bin/bash -c "espup install && cargo build --release"
 
 # Set working directory
 WORKDIR /project
 
-# Copy project files
-COPY Cargo.toml Cargo.lock ./
-COPY .cargo .cargo
-COPY src src
-COPY build.rs .
-COPY sdkconfig.defaults .
+# Set default WiFi credentials (can be overridden at build/run time)
+ENV WIFI_SSID="your_wifi_ssid"
+ENV WIFI_PASS="your_wifi_password"
 
-# Set environment for esp-idf-sys to use pre-installed ESP-IDF
-ENV IDF_PATH=/opt/esp/idf
-ENV IDF_TOOLS_PATH=/opt/esp
-
-# Build the project in release mode
-RUN bash -c "source /root/export-esp.sh && cargo build --release"
-
-# Stage 2: Runtime environment for flashing
-FROM ubuntu:22.04
-
-# Install minimal dependencies for flashing
-RUN apt-get update && apt-get install -y \
-    libusb-1.0-0 \
-    python3 \
-    python3-pip \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install Rust and espflash for flashing capability
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-ENV PATH="/root/.cargo/bin:${PATH}"
-RUN cargo install espflash
-
-# Copy the built binary from builder stage
-COPY --from=builder /project/target/xtensa-esp32-espidf/release/rotary_encoder_example /app/rotary_encoder_example
-
-WORKDIR /app
-
-# Default command shows help
-CMD ["espflash", "--help"]
+# Build the project when container runs
+# The default command sets up ESP toolchain if needed, then builds
+CMD ["/bin/bash", "-c", "\
+    echo 'Setting up ESP Rust toolchain...' && \
+    (test -f $HOME/export-esp.sh || espup install) && \
+    source $HOME/export-esp.sh && \
+    echo 'Building rotary encoder firmware...' && \
+    cargo build --release && \
+    echo '' && \
+    echo '=== Build Complete ===' && \
+    echo 'Release binary location:' && \
+    ls -lh target/xtensa-esp32-espidf/release/rotary_encoder_example && \
+    echo '' && \
+    echo 'To flash: espflash flash --monitor target/xtensa-esp32-espidf/release/rotary_encoder_example'\
+"]
