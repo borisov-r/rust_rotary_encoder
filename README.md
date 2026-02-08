@@ -1,6 +1,15 @@
 # rust_rotary_encoder
 Rust Rotary Encoder Driver for ESP32 using Rust [ref.: https://github.com/miketeachman/micropython-rotary]
 
+## ⚠️ Important: Dependency Fix
+
+If you experience issues with the rotary encoder not responding after updating dependencies, or see a warning about deprecated `timer_group` driver, please see **[TIMER_FIX.md](TIMER_FIX.md)** for the solution.
+
+**Quick fix:**
+```bash
+./fix-dependencies.sh
+```
+
 ## Overview
 
 This is a Rust implementation of a rotary encoder driver for ESP32 microcontrollers, based on the robust state machine approach from Ben Buxton's rotary encoder algorithm. The implementation provides:
@@ -251,6 +260,45 @@ The rotary encoder module includes unit tests:
 ```bash
 cargo test
 ```
+
+## Troubleshooting
+
+### Encoder Not Responding
+
+**Symptoms:**
+- ESP32 starts successfully
+- No angle changes when rotating the encoder
+- May see warning: `timer_group: legacy driver is deprecated`
+
+**Solution:** See [TIMER_FIX.md](TIMER_FIX.md) for detailed fix. Quick fix:
+```bash
+./fix-dependencies.sh
+cargo build --release
+```
+
+**Root Cause:** Dependency version mismatch causing GPIO interrupts to fail silently.
+
+### GPIO Pin Issues
+
+- Verify your wiring matches the pin configuration in `src/main.rs`
+- Check that you're using interrupt-capable pins (GPIO21, GPIO22 in default config)
+- Avoid using strapping pins (GPIO0, GPIO2, GPIO5, GPIO15) for the encoder
+
+### Build Issues
+
+- Make sure you have the ESP Rust toolchain installed: `espup install`
+- Source the environment: `. ~/export-esp.sh`
+- Clean and rebuild: `cargo clean && cargo build --release`
+
+### Debug Logging
+
+Enable verbose logging to see interrupt activity:
+
+```rust
+log::set_max_level(log::LevelFilter::Trace);
+```
+
+This will show every GPIO interrupt and state transition.
 
 ## References
 
