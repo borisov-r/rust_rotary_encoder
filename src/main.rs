@@ -123,5 +123,10 @@ fn main() -> anyhow::Result<()> {
             info!("==============================================");
             last_angle = current_angle;
         }
+
+        // CRITICAL: Keep drivers in scope to maintain interrupt handlers
+        // The compiler will optimize this away, but it prevents the drivers
+        // from being dropped, which would unregister the interrupts
+        let _ = (&clk_driver, &dt_driver);
     }
 }
