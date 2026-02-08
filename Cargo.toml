@@ -23,9 +23,9 @@ embassy = ["esp-idf-svc/embassy-sync", "esp-idf-svc/critical-section", "esp-idf-
 log = "0.4"
 
 # ESP32-specific dependencies
+# Note: esp-idf-svc re-exports esp-idf-hal and esp-idf-sys at compatible versions
+# so we don't need to (and shouldn't) specify them separately
 esp-idf-svc = { version = "0.51.0", default-features = false }
-esp-idf-hal = { version = "*", default-features = false }
-esp-idf-sys = { version = "*", default-features = false }
 embedded-hal = { version = "1.0" }
 anyhow = { version = "1.0" }
 embedded-svc = "0.28"

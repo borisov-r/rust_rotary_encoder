@@ -1,8 +1,9 @@
 // Main application for ESP32 Rotary Encoder
 // Reads rotary encoder and prints angle to serial console with debug information
 
-use esp_idf_hal::gpio::{InterruptType, PinDriver, Pull};
-use esp_idf_hal::peripherals::Peripherals;
+// Use esp-idf-hal re-exported from esp-idf-svc to ensure version compatibility
+use esp_idf_svc::hal::gpio::{InterruptType, PinDriver, Pull};
+use esp_idf_svc::hal::peripherals::Peripherals;
 use esp_idf_svc::log::EspLogger;
 use log::info;
 use rust_rotary_encoder::{RangeMode, RotaryEncoder};

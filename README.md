@@ -1,6 +1,15 @@
 # rust_rotary_encoder
 Rust Rotary Encoder Driver for ESP32 using Rust [ref.: https://github.com/miketeachman/micropython-rotary]
 
+## ⚠️ Important: Dependency Fix
+
+If you experience issues with the rotary encoder not responding after updating dependencies, or see a warning about deprecated `timer_group` driver, please see **[TIMER_FIX.md](TIMER_FIX.md)** for the solution.
+
+**Quick fix:**
+```bash
+./fix-dependencies.sh
+```
+
 ## Overview
 
 This is a Rust implementation of a rotary encoder driver for ESP32 microcontrollers, based on the robust state machine approach from Ben Buxton's rotary encoder algorithm. The implementation provides:
@@ -23,12 +32,12 @@ Connect the rotary encoder to your ESP32:
 
 | Encoder Pin | ESP32 Pin | Description |
 |------------|-----------|-------------|
-| CLK        | GPIO12    | Clock signal |
-| DT         | GPIO13    | Data signal  |
+| CLK        | GPIO21    | Clock signal |
+| DT         | GPIO22    | Data signal  |
 | +          | 3.3V      | Power supply |
 | GND        | GND       | Ground       |
 
-**Note**: GPIO12 and GPIO13 support interrupts on ESP32. GPIO12 is a strapping pin (affects flash voltage) but works in most cases. For maximum safety, consider using GPIO13/14 or GPIO25-27. Avoid other strapping pins (GPIO0, GPIO2, GPIO5, GPIO15) to prevent boot issues.
+**Note**: GPIO21 and GPIO22 are safe, interrupt-capable pins on ESP32. They are not strapping pins, making them ideal for this application. Avoid using strapping pins (GPIO0, GPIO2, GPIO5, GPIO12, GPIO15) to prevent boot issues.
 
 ## Software Requirements
 
@@ -162,8 +171,8 @@ I (123) rust_rotary_encoder: ==============================================
 I (124) rust_rotary_encoder: ESP32 Rotary Encoder Application Starting...
 I (125) rust_rotary_encoder: ==============================================
 I (126) rust_rotary_encoder: Configuring rotary encoder on pins:
-I (127) rust_rotary_encoder:   CLK: GPIO12
-I (128) rust_rotary_encoder:   DT:  GPIO13
+I (127) rust_rotary_encoder:   CLK: GPIO21
+I (128) rust_rotary_encoder:   DT:  GPIO22
 I (129) rust_rotary_encoder: Rotary encoder initialized:
 I (130) rust_rotary_encoder:   Range: 0-359 degrees (wrap mode)
 I (131) rust_rotary_encoder:   Increment: 1 degree per click
@@ -226,8 +235,8 @@ log::set_max_level(log::LevelFilter::Debug);
 Modify the GPIO pin numbers in `src/main.rs`:
 
 ```rust
-let clk_pin = peripherals.pins.gpio12;  // Change to your CLK pin
-let dt_pin = peripherals.pins.gpio13;   // Change to your DT pin
+let clk_pin = peripherals.pins.gpio21;  // Change to your CLK pin
+let dt_pin = peripherals.pins.gpio22;   // Change to your DT pin
 ```
 
 ### Change Range
@@ -251,6 +260,45 @@ The rotary encoder module includes unit tests:
 ```bash
 cargo test
 ```
+
+## Troubleshooting
+
+### Encoder Not Responding
+
+**Symptoms:**
+- ESP32 starts successfully
+- No angle changes when rotating the encoder
+- May see warning: `timer_group: legacy driver is deprecated`
+
+**Solution:** See [TIMER_FIX.md](TIMER_FIX.md) for detailed fix. Quick fix:
+```bash
+./fix-dependencies.sh
+cargo build --release
+```
+
+**Root Cause:** Dependency version mismatch causing GPIO interrupts to fail silently.
+
+### GPIO Pin Issues
+
+- Verify your wiring matches the pin configuration in `src/main.rs`
+- Check that you're using interrupt-capable pins (GPIO21, GPIO22 in default config)
+- Avoid using strapping pins (GPIO0, GPIO2, GPIO5, GPIO15) for the encoder
+
+### Build Issues
+
+- Make sure you have the ESP Rust toolchain installed: `espup install`
+- Source the environment: `. ~/export-esp.sh`
+- Clean and rebuild: `cargo clean && cargo build --release`
+
+### Debug Logging
+
+Enable verbose logging to see interrupt activity:
+
+```rust
+log::set_max_level(log::LevelFilter::Trace);
+```
+
+This will show every GPIO interrupt and state transition.
 
 ## References
 
