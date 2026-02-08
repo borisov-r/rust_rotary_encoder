@@ -4,6 +4,10 @@ target = "xtensa-esp32-espidf"
 [target.xtensa-esp32-espidf]
 linker = "ldproxy"
 runner = "espflash flash --monitor"
+# Use rustflags to pass the actual linker to ldproxy
+rustflags = [
+    "-C", "link-arg=--ldproxy-linker=xtensa-esp32-elf-gcc",
+]
 
 [unstable]
 build-std = ["std", "panic_abort"]
