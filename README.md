@@ -1,9 +1,19 @@
 # rust_rotary_encoder
 Rust Rotary Encoder Driver for ESP32 using Rust [ref.: https://github.com/miketeachman/micropython-rotary]
 
-## ⚠️ Important: Dependency Fix
+## ⚠️ Important: Angle Not Updating Issue
 
-If you experience issues with the rotary encoder not responding after updating dependencies, or see a warning about deprecated `timer_group` driver, please see **[TIMER_FIX.md](TIMER_FIX.md)** for the solution.
+If the rotary encoder is not responding (angle doesn't change when rotating), see **[FIX_ANGLE_NOT_UPDATING.md](FIX_ANGLE_NOT_UPDATING.md)** for the complete solution. The most common cause is outdated dependencies in Cargo.lock.
+
+**Quick fix:**
+```bash
+cargo update
+cargo build --release
+```
+
+## ⚠️ Deprecated Timer Driver Issue
+
+If you see a warning about deprecated `timer_group` driver, please see **[TIMER_FIX.md](TIMER_FIX.md)** for the solution.
 
 **Quick fix:**
 ```bash
