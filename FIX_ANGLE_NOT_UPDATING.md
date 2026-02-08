@@ -71,20 +71,18 @@ There's an automated script that does all of this for you:
 
 ## Code Changes Made
 
-In addition to the dependency update, we've also made a small code change to ensure the GPIO interrupt handlers remain active:
+To ensure clarity and proper code documentation, we've added a comment in the code explaining that the GPIO drivers remain in scope:
 
-**File: `src/main.rs`, lines 114-117**
+**File: `src/main.rs`, lines 127-128**
 
-Added explicit variables to keep the PinDriver objects in scope:
+Added clarifying comment:
 
 ```rust
-// CRITICAL: Keep PinDriver objects alive to maintain interrupt subscriptions
-// Store them in a scope that lasts for the entire program execution
-let _clk_driver = clk_driver;
-let _dt_driver = dt_driver;
+// Note: PinDriver objects (clk_driver, dt_driver) remain in scope for the entire
+// program execution due to the infinite loop above, keeping interrupt subscriptions active.
 ```
 
-This ensures the interrupt subscriptions remain registered for the entire program execution.
+This comment clarifies that the drivers are not dropped because the function never exits (infinite loop), which keeps the interrupt subscriptions active. No code changes were necessary for this aspect.
 
 ## Why This Happens
 
