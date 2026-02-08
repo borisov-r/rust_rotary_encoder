@@ -124,4 +124,7 @@ fn main() -> anyhow::Result<()> {
             last_angle = current_angle;
         }
     }
+
+    // Note: PinDriver objects (clk_driver, dt_driver) remain in scope for the entire
+    // program execution due to the infinite loop above, keeping interrupt subscriptions active.
 }
