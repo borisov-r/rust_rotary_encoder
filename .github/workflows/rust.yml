@@ -42,6 +42,12 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
       
+    - name: Temporarily move rust-toolchain.toml
+      run: |
+        # Move rust-toolchain.toml to avoid toolchain conflict during setup
+        # It will be restored after espup installs the ESP toolchain
+        mv rust-toolchain.toml rust-toolchain.toml.bak
+      
     - name: Install Rust
       uses: dtolnay/rust-toolchain@stable
         
@@ -52,6 +58,15 @@ jobs:
         
     - name: Install ldproxy
       run: cargo install ldproxy
+      
+    - name: Restore rust-toolchain.toml
+      if: always()
+      run: |
+        # Restore rust-toolchain.toml now that ESP toolchain is installed
+        # Use if statement to avoid error if backup doesn't exist
+        if [ -f rust-toolchain.toml.bak ]; then
+          mv rust-toolchain.toml.bak rust-toolchain.toml
+        fi
           
     - name: Cache cargo registry
       uses: actions/cache@v4
