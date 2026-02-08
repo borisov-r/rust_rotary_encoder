@@ -8,8 +8,9 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  # Note: WiFi credentials are required for build but not embedded in the binary
-  # These are placeholder values for CI builds only
+  # Note: These WiFi credentials are placeholder values for CI compilation only.
+  # They satisfy the build system requirements but are non-functional.
+  # To use real WiFi, you must build from source with actual credentials.
   WIFI_SSID: "test_ssid"
   WIFI_PASS: "test_password"
 
@@ -17,6 +18,8 @@ jobs:
   format:
     name: Format Check
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     
     steps:
     - uses: actions/checkout@v4
@@ -100,6 +103,7 @@ jobs:
     - name: Generate version tag
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       id: version
+      shell: bash
       run: |
         # Use date-based versioning (UTC): v2026.02.08
         DATE_VERSION=$(date -u +%Y.%m.%d)
@@ -184,7 +188,7 @@ jobs:
           espflash flash --monitor rotary_encoder_example-esp32-${{ steps.version.outputs.version_tag }}
           ```
           
-          **⚠️ Important:** Pre-built firmware contains test WiFi credentials. To use your own WiFi network, you must build from source with your credentials.
+          **⚠️ Important:** Pre-built firmware contains placeholder WiFi credentials (non-functional). To connect to an actual WiFi network, you must build from source with real credentials.
           
           ### 📚 Setup Instructions
           1. Download the firmware binary (`rotary_encoder_example-esp32-${{ steps.version.outputs.version_tag }}`)
@@ -192,7 +196,7 @@ jobs:
           3. See [README.md](https://github.com/${{ github.repository }}/blob/${{ github.sha }}/README.md) for wiring and usage instructions
           
           ### 🔑 WiFi Configuration
-          To use your own WiFi network (instead of test credentials), you must build from source. See the documentation for details.
+          The pre-built firmware contains non-functional placeholder WiFi credentials used only for compilation. To connect to a real WiFi network, you must build from source with actual credentials. See the documentation for details.
           
           ### 📝 Changes
           See the [commit history](https://github.com/${{ github.repository }}/commits/${{ github.sha }}) for details.
