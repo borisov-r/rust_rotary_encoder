@@ -74,23 +74,25 @@ fn main() -> anyhow::Result<()> {
         clk_driver.subscribe(move || {
             // Critical: We're in ISR context, minimize work here
             // Just read the pin states and process
+            // NOTE: Cannot use logging here as it acquires locks (causes abort on ESP32)
 
             // SAFETY: Reading GPIO registers is safe in ISR
             // We use raw GPIO read to avoid mutex/lock issues
             let clk_state = esp_idf_svc::sys::gpio_get_level(21) != 0;
             let dt_state = esp_idf_svc::sys::gpio_get_level(22) != 0;
 
-            info!("[ISR-CLK] CLK={}, DT={}", clk_state, dt_state);
             encoder_for_isr.process_pins(clk_state, dt_state);
         })?;
 
         let encoder_for_isr2 = encoder.clone();
         dt_driver.subscribe(move || {
+            // Critical: We're in ISR context, minimize work here
+            // NOTE: Cannot use logging here as it acquires locks (causes abort on ESP32)
+            
             // SAFETY: Reading GPIO registers is safe in ISR
             let clk_state = esp_idf_svc::sys::gpio_get_level(21) != 0;
             let dt_state = esp_idf_svc::sys::gpio_get_level(22) != 0;
 
-            info!("[ISR-DT] CLK={}, DT={}", clk_state, dt_state);
             encoder_for_isr2.process_pins(clk_state, dt_state);
         })?;
     }

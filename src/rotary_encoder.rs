@@ -97,6 +97,12 @@ impl RotaryEncoder {
 
     /// Process rotary encoder pin state changes
     /// This should be called from an interrupt handler
+    /// 
+    /// IMPORTANT: This method is called from ISR context and MUST NOT:
+    /// - Use any logging (log::*, println!, etc.)
+    /// - Allocate memory
+    /// - Acquire locks or mutexes
+    /// - Call blocking operations
     pub fn process_pins(&self, clk: bool, dt: bool) {
         let old_value = self.value();
         let old_state = self.state.load(Ordering::SeqCst);
@@ -104,25 +110,12 @@ impl RotaryEncoder {
         // Combine pin states into a 2-bit value
         let clk_dt_pins = ((clk as u8) << 1) | (dt as u8);
 
-        log::trace!(
-            "Pin interrupt: CLK={}, DT={}, combined=0b{:02b}, old_state=0x{:02x}, old_value={}",
-            clk,
-            dt,
-            clk_dt_pins,
-            old_state,
-            old_value
-        );
-
         // Determine next state from transition table
         let current_state_index = (old_state & STATE_MASK) as usize;
         let pin_index = clk_dt_pins as usize;
 
         if current_state_index >= TRANSITION_TABLE.len() || pin_index >= 4 {
-            log::warn!(
-                "Invalid state or pin index: state={}, pins={}",
-                current_state_index,
-                pin_index
-            );
+            // Invalid state - silently return (cannot log in ISR context)
             return;
         }
 
@@ -131,21 +124,12 @@ impl RotaryEncoder {
 
         let direction = new_state & DIR_MASK;
 
-        log::trace!(
-            "State transition: 0x{:02x} -> 0x{:02x}, direction=0x{:02x}",
-            old_state,
-            new_state,
-            direction
-        );
-
         // Calculate increment based on direction
         let mut incr = 0;
         if direction == DIR_CW {
             incr = self.incr;
-            log::debug!("Clockwise rotation detected, increment={}", incr);
         } else if direction == DIR_CCW {
             incr = -self.incr;
-            log::debug!("Counter-clockwise rotation detected, increment={}", incr);
         }
 
         incr *= self.reverse;
@@ -168,13 +152,6 @@ impl RotaryEncoder {
             };
 
             self.value.store(new_value, Ordering::SeqCst);
-
-            log::info!(
-                "Value changed: {} -> {} (incr={})",
-                old_value,
-                new_value,
-                incr
-            );
         }
     }
 
