@@ -90,15 +90,23 @@ fn main() -> anyhow::Result<()> {
 
         // Print angle changes
         if angle != last_angle {
-            info!("==============================================");
-            info!("ANGLE CHANGED: {} -> {} degrees", last_angle, angle);
-            info!("Direction: {}", 
-                if angle > last_angle || (last_angle == 359 && angle == 0) {
+            // Determine direction, accounting for wrap-around
+            let direction_str = if angle == (last_angle + 1) % 360 {
+                "Clockwise"
+            } else if angle == (last_angle + 359) % 360 {
+                "Counter-clockwise"
+            } else {
+                // Large jump, determine by comparison
+                if angle > last_angle {
                     "Clockwise"
                 } else {
                     "Counter-clockwise"
                 }
-            );
+            };
+
+            info!("==============================================");
+            info!("ANGLE CHANGED: {} -> {} degrees", last_angle, angle);
+            info!("Direction: {}", direction_str);
             info!("==============================================");
             last_angle = angle;
         }

@@ -227,7 +227,8 @@ match direction {
 Adjust the sleep interval in the main loop:
 
 ```rust
-thread::sleep(Duration::from_millis(1));  // 1000Hz (recommended: 850-1000Hz)
+thread::sleep(Duration::from_millis(1));  // 1ms = 1000Hz (recommended: 850-1000Hz)
+// For 850Hz, use: Duration::from_micros(1176)  // ~850Hz
 ```
 
 ## Troubleshooting
