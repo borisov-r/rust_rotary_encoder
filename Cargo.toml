@@ -43,10 +43,6 @@ embuild = { version = "0.31.3", features = ["espidf"] }
 name = "rotary_encoder_example"
 path = "src/main.rs"
 
-[[example]]
-name = "simulate"
-path = "examples/simulate.rs"
-
 [profile.release]
 opt-level = "s"
 
