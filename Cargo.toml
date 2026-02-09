@@ -30,6 +30,9 @@ embedded-hal = { version = "1.0" }
 anyhow = { version = "1.0" }
 embedded-svc = "0.28"
 
+# Rotary encoder library
+rotary-encoder-embedded = "0.5"
+
 [dev-dependencies]
 env_logger = "0.11"
 
