@@ -1,34 +1,15 @@
 # rust_rotary_encoder
-Rust Rotary Encoder Driver for ESP32 using Rust [ref.: https://github.com/miketeachman/micropython-rotary]
-
-## ⚠️ Important: Angle Not Updating Issue
-
-If the rotary encoder is not responding (angle doesn't change when rotating), see **[FIX_ANGLE_NOT_UPDATING.md](FIX_ANGLE_NOT_UPDATING.md)** for the complete solution. The most common cause is outdated dependencies in Cargo.lock.
-
-**Quick fix:**
-```bash
-cargo update
-cargo build --release
-```
-
-## ⚠️ Deprecated Timer Driver Issue
-
-If you see a warning about deprecated `timer_group` driver, please see **[TIMER_FIX.md](TIMER_FIX.md)** for the solution.
-
-**Quick fix:**
-```bash
-./fix-dependencies.sh
-```
+Rotary Encoder Driver for ESP32 using the rotary-encoder-embedded library
 
 ## Overview
 
-This is a Rust implementation of a rotary encoder driver for ESP32 microcontrollers, based on the robust state machine approach from Ben Buxton's rotary encoder algorithm. The implementation provides:
+This project demonstrates using the [rotary-encoder-embedded](https://github.com/ost-ing/rotary-encoder-embedded) library with ESP32 to track rotary encoder position and display the angle (0-359 degrees) in the serial console.
 
-- **Interrupt-driven architecture**: Uses GPIO interrupts for responsive encoder tracking
-- **State machine debouncing**: Implements Ben Buxton's gray-code transition table for accurate counts and effective debouncing
-- **Comprehensive debug logging**: Traces the complete path from pin interrupts to value changes
-- **Multiple range modes**: Supports unbounded, wrap-around, and bounded counting
-- **Angle tracking**: Can represent rotary position as degrees (0-359)
+The implementation uses:
+- **rotary-encoder-embedded library**: A well-tested, reliable rotary encoder library
+- **Polling-based architecture**: Updates encoder state at ~1ms intervals (1000Hz) as recommended
+- **StandardMode**: Suitable for encoders with detents (mechanical clicks)
+- **Comprehensive debug logging**: Shows angle changes with direction information
 
 ## Hardware Requirements
 
@@ -47,7 +28,7 @@ Connect the rotary encoder to your ESP32:
 | +          | 3.3V      | Power supply |
 | GND        | GND       | Ground       |
 
-**Note**: GPIO21 and GPIO22 are safe, interrupt-capable pins on ESP32. They are not strapping pins, making them ideal for this application. Avoid using strapping pins (GPIO0, GPIO2, GPIO5, GPIO12, GPIO15) to prevent boot issues.
+**Note**: GPIO21 and GPIO22 are safe, input-capable pins on ESP32. They are not strapping pins, making them ideal for this application.
 
 ## Software Requirements
 
@@ -146,31 +127,14 @@ Or use espflash directly:
 espflash flash target/xtensa-esp32-espidf/release/rotary_encoder_example --monitor
 ```
 
-### For Simulation (No Hardware Required)
-
-You can test the rotary encoder logic without ESP32 hardware:
-
-```bash
-# Build and run simulation example
-cargo run --example simulate --target x86_64-unknown-linux-gnu
-
-# On macOS, use:
-cargo run --example simulate --target aarch64-apple-darwin
-
-# On Windows, use:
-cargo run --example simulate --target x86_64-pc-windows-msvc
-```
-
-The simulation demonstrates clockwise/counter-clockwise rotation and tests different range modes.
-
 ## Usage
 
 The example application (`src/main.rs`) demonstrates:
 
-1. **Initialization**: Sets up the rotary encoder with angle range 0-359 degrees
-2. **Interrupt handling**: Configures GPIO interrupts on both CLK and DT pins
-3. **Value tracking**: Monitors encoder position and prints changes to serial console
-4. **Debug output**: Logs every interrupt and state transition
+1. **Initialization**: Sets up the rotary encoder in StandardMode with GPIO21 and GPIO22
+2. **Polling loop**: Continuously polls the encoder at ~1ms intervals (1000Hz)
+3. **Angle tracking**: Maintains angle from 0-359 degrees with wrap-around
+4. **Debug output**: Logs every angle change with direction to serial console
 
 ### Expected Output
 
@@ -179,64 +143,54 @@ When you run the application and turn the encoder, you'll see:
 ```
 I (123) rust_rotary_encoder: ==============================================
 I (124) rust_rotary_encoder: ESP32 Rotary Encoder Application Starting...
-I (125) rust_rotary_encoder: ==============================================
-I (126) rust_rotary_encoder: Configuring rotary encoder on pins:
-I (127) rust_rotary_encoder:   CLK: GPIO21
-I (128) rust_rotary_encoder:   DT:  GPIO22
-I (129) rust_rotary_encoder: Rotary encoder initialized:
-I (130) rust_rotary_encoder:   Range: 0-359 degrees (wrap mode)
-I (131) rust_rotary_encoder:   Increment: 1 degree per click
-...
-I (456) rust_rotary_encoder: [ISR-CLK] CLK=true, DT=true
-I (457) rust_rotary_encoder: Clockwise rotation detected, increment=1
-I (458) rust_rotary_encoder: Value changed: 0 -> 1 (incr=1)
-I (459) rust_rotary_encoder: ==============================================
-I (460) rust_rotary_encoder: ANGLE CHANGED: 0 -> 1 degrees
-I (461) rust_rotary_encoder: ==============================================
+I (125) rust_rotary_encoder: Using rotary-encoder-embedded library
+I (126) rust_rotary_encoder: ==============================================
+I (127) rust_rotary_encoder: Configuring rotary encoder on pins:
+I (128) rust_rotary_encoder:   CLK: GPIO21
+I (129) rust_rotary_encoder:   DT:  GPIO22
+I (130) rust_rotary_encoder: Setting up GPIO pins with pull-up resistors...
+I (131) rust_rotary_encoder: Initial pin states:
+I (132) rust_rotary_encoder:   CLK: true
+I (133) rust_rotary_encoder:   DT:  true
+I (134) rust_rotary_encoder: Rotary encoder initialized in StandardMode
+I (135) rust_rotary_encoder: Polling will be performed in main loop at ~1ms interval
+I (136) rust_rotary_encoder: ==============================================
+I (137) rust_rotary_encoder: Ready to read rotary encoder!
+I (138) rust_rotary_encoder: Turn the encoder to see angle changes...
+I (139) rust_rotary_encoder: ==============================================
+I (140) rust_rotary_encoder: Current angle: 0 degrees
+I (141) rust_rotary_encoder: Debug: Monitoring for changes...
+I (456) rust_rotary_encoder: DEBUG: Clockwise tick detected, angle: 1
+I (457) rust_rotary_encoder: ==============================================
+I (458) rust_rotary_encoder: ANGLE CHANGED: 0 -> 1 degrees
+I (459) rust_rotary_encoder: Direction: Clockwise
+I (460) rust_rotary_encoder: ==============================================
 ```
 
 ## Code Structure
 
-- `src/main.rs`: Example application with GPIO setup and interrupt handlers
-- `src/rotary_encoder.rs`: Core rotary encoder state machine logic
-- `Cargo.toml`: Project dependencies and configuration
+- `src/main.rs`: Example application with GPIO setup and polling loop
+- `Cargo.toml`: Project dependencies (uses rotary-encoder-embedded library)
 - `build.rs`: ESP-IDF build configuration
 - `.cargo/config.toml`: Target and build settings for ESP32
 
 ## Key Features
 
-### State Machine Implementation
+### Library Used
 
-The encoder uses a transition table based on Ben Buxton's algorithm:
+This project uses the **rotary-encoder-embedded** crate which provides:
+- Robust gray-code decoding for quadrature encoders
+- Support for encoders with and without detents
+- Multiple decoding modes (StandardMode, QuadratureTableMode, VelocityMode)
+- No-std support for embedded environments
+- Compatible with embedded-hal 1.0
 
-```rust
-const TRANSITION_TABLE: [[u8; 4]; 8] = [
-    // Handles all encoder states and transitions
-    // Provides effective debouncing
-];
-```
+### Polling Strategy
 
-### Range Modes
-
-Three range modes are supported:
-
-1. **Unbounded**: Counts can go infinitely positive or negative
-2. **Wrap**: Counts wrap around at min/max values (e.g., 359 → 0)
-3. **Bounded**: Counts stop at min/max values
-
-### Debug Logging
-
-The implementation includes extensive logging:
-
-- **TRACE**: Every interrupt with pin states
-- **DEBUG**: State transitions and direction detection
-- **INFO**: Value changes and angle updates
-
-Enable different log levels by modifying:
-
-```rust
-log::set_max_level(log::LevelFilter::Debug);
-```
+Following the library's recommendations:
+- Polling is performed at ~1ms intervals (1000Hz)
+- This approach is more reliable than GPIO interrupts for noisy rotary encoders
+- Acts as a simple but effective noise filter
 
 ## Customization
 
@@ -249,26 +203,32 @@ let clk_pin = peripherals.pins.gpio21;  // Change to your CLK pin
 let dt_pin = peripherals.pins.gpio22;   // Change to your DT pin
 ```
 
-### Change Range
+### Change Angle Range
 
-Modify the encoder parameters:
+Modify the angle tracking logic:
 
 ```rust
-let encoder = Arc::new(RotaryEncoder::new(
-    0,     // min_val
-    100,   // max_val (e.g., 0-100 instead of 0-359)
-    1,     // increment per click
-    false, // reverse direction
-    RangeMode::Bounded, // or Wrap, Unbounded
-));
+// For different range (e.g., 0-100)
+let mut angle: i32 = 0;
+// Then in the loop:
+match direction {
+    Direction::Clockwise => {
+        angle = (angle + 1) % 100;  // Wrap at 100 instead of 360
+    }
+    Direction::Anticlockwise => {
+        angle = (angle - 1 + 100) % 100;
+    }
+    Direction::None => {}
+}
 ```
 
-## Testing
+### Change Polling Rate
 
-The rotary encoder module includes unit tests:
+Adjust the sleep interval in the main loop:
 
-```bash
-cargo test
+```rust
+thread::sleep(Duration::from_millis(1));  // 1ms = 1000Hz (recommended: 850-1000Hz)
+// For 850Hz, use: Duration::from_micros(1176)  // ~850Hz
 ```
 
 ## Troubleshooting
@@ -278,21 +238,12 @@ cargo test
 **Symptoms:**
 - ESP32 starts successfully
 - No angle changes when rotating the encoder
-- May see warning: `timer_group: legacy driver is deprecated`
 
-**Solution:** See [TIMER_FIX.md](TIMER_FIX.md) for detailed fix. Quick fix:
-```bash
-./fix-dependencies.sh
-cargo build --release
-```
-
-**Root Cause:** Dependency version mismatch causing GPIO interrupts to fail silently.
-
-### GPIO Pin Issues
-
-- Verify your wiring matches the pin configuration in `src/main.rs`
-- Check that you're using interrupt-capable pins (GPIO21, GPIO22 in default config)
-- Avoid using strapping pins (GPIO0, GPIO2, GPIO5, GPIO15) for the encoder
+**Solutions:**
+1. Verify your wiring matches the pin configuration in `src/main.rs`
+2. Check that your encoder has pull-up resistors (internal pull-ups are enabled in code)
+3. Try adjusting the polling rate (between 850-1000Hz is recommended)
+4. Ensure the encoder is a quadrature/gray-code type (KY-040 works well)
 
 ### Build Issues
 
@@ -302,19 +253,22 @@ cargo build --release
 
 ### Debug Logging
 
-Enable verbose logging to see interrupt activity:
+The code includes debug logging for each encoder tick. You can see:
+- Every clockwise/counter-clockwise detection
+- Angle changes with direction
+- Initial pin states
+
+To reduce verbosity, change the log level:
 
 ```rust
-log::set_max_level(log::LevelFilter::Trace);
+log::set_max_level(log::LevelFilter::Info);  // or Warn, Error
 ```
-
-This will show every GPIO interrupt and state transition.
 
 ## References
 
-- [Ben Buxton's Rotary Encoder Implementation](http://www.buxtronix.net/2011/10/rotary-encoders-done-properly.html)
-- [MicroPython Rotary Encoder](https://github.com/miketeachman/micropython-rotary)
+- [rotary-encoder-embedded crate](https://github.com/ost-ing/rotary-encoder-embedded)
 - [ESP-IDF Documentation](https://docs.espressif.com/projects/esp-idf/en/latest/)
+- [Rust on ESP32](https://esp-rs.github.io/book/)
 
 ## License
 
